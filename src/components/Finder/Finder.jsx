@@ -1,43 +1,38 @@
-import React, { Component } from 'react';
+import { useState } from 'react';
 import { Searchbar } from './Searchbar.jsx';
 import { ImageGallery } from './ImageGallery.jsx';
 import { Dna } from 'react-loader-spinner';
 import { LoadBtn } from './LoadBtn.jsx';
 import { Modal } from './Modal.jsx';
 
-export class Finder extends Component {
-  state = {
-    api: 'https://pixabay.com/api/',
-    key: '37137772-1a086c34cc6bb66f52c7a1fd6',
-    input: '',
-    elements: [],
-    loading: false,
-    loadMore: false,
-    page: 1,
-    nextElements: [],
-    showModal: false,
-    selectedImage: '',
+export function Finder() {
+  const [api] = useState('https://pixabay.com/api/');
+  const [key] = useState('37137772-1a086c34cc6bb66f52c7a1fd6');
+  const [input, setInput] = useState(``);
+  const [elements, setElements] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [loadMore, setLoadMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [nextElements, setNextElements] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(``);
+
+  const handleInputChange = e => {
+    setInput(e.currentTarget.value);
   };
 
-  handleInputChange = e => {
-    this.setState({
-      input: e.currentTarget.value,
-    });
-  };
-
-  onSubmit = e => {
+  const onSubmit = e => {
     e.preventDefault();
 
-    this.setState({ loading: true });
-
-    const { api, key, input } = this.state;
+    setLoading(true);
 
     if (input.trim().length === 0) {
       alert('Заповніть поле пошуку');
+      setLoading(false);
       return;
     }
 
-    this.setState({ elements: [] });
+    setElements([]);
 
     fetch(
       `${api}?q=${input}&page=1&key=${key}&image_type=photo&orientation=horizontal&per_page=12`
@@ -46,7 +41,8 @@ export class Finder extends Component {
       .then(result => {
         if (result.total === 0) {
           alert(`На жаль ${input} не знайдено`);
-          this.setState({ loading: false });
+          setLoading(false);
+          setLoadMore(false);
           return;
         } else {
           const { hits } = result;
@@ -55,26 +51,20 @@ export class Finder extends Component {
             img: el.webformatURL,
             modalImg: el.largeImageURL,
           }));
-          this.setState({
-            elements: newElements,
-            loading: false,
-            loadMore: true,
-          });
+          setElements(newElements);
+          setLoadMore(true);
+          setLoading(false);
         }
       })
       .catch(console.log);
 
-    this.setState({ page: 2 });
+    setPage(2);
   };
 
-  onClick = () => {
-    this.setState(prevState => ({
-      elements: [...prevState.elements, ...prevState.nextElements],
-      page: prevState.page + 1,
-      nextElements: [],
-    }));
-
-    const { api, key, input, page } = this.state;
+  const onClick = () => {
+    setElements([...elements, ...nextElements]);
+    setPage(state => state + 1);
+    setNextElements([]);
 
     if (input.trim().length === 0) {
       alert('Заповніть поле пошуку');
@@ -87,7 +77,7 @@ export class Finder extends Component {
       .then(result => {
         if (result.total === 0) {
           alert(`На жаль ${input} не знайдено`);
-          this.setState({ loading: false });
+          setLoading(false);
           return;
         } else {
           const { hits } = result;
@@ -96,56 +86,44 @@ export class Finder extends Component {
             img: el.webformatURL,
             modalImg: el.largeImageURL,
           }));
-          this.setState(prevState => ({
-            elements: [...prevState.elements, ...newElements],
-            loading: false,
-          }));
+          setElements([...elements, ...newElements]);
+          setLoading(false);
         }
       })
       .catch(console.log);
   };
 
-  toggleModal = (id = '') => {
-    const { elements } = this.state;
+  const toggleModal = (id = '') => {
     const selectedImage = elements.find(el => el.id === id)?.modalImg || '';
-    this.setState(prevState => ({
-      showModal: !prevState.showModal,
-      selectedImage,
-    }));
+    setShowModal(state => !state);
+    setSelectedImage(selectedImage);
   };
 
-  render() {
-    const { input, elements, loading, loadMore, showModal, selectedImage } =
-      this.state;
-
-    return (
-      <div>
-        <Searchbar
-          handleInputChange={this.handleInputChange}
-          input={input}
-          onSubmit={this.onSubmit}
+  return (
+    <div>
+      <Searchbar
+        handleInputChange={handleInputChange}
+        input={input}
+        onSubmit={onSubmit}
+      />
+      <ImageGallery elements={elements} toggleModal={toggleModal} />
+      {loading && (
+        <Dna
+          visible={true}
+          height="80"
+          width="80"
+          ariaLabel="dna-loading"
+          wrapperStyle={{
+            display: 'block',
+            marginRight: 'auto',
+            marginLeft: `auto`,
+          }}
+          wrapperClass="dna-wrapper"
+          marginRight="50%"
         />
-        <ImageGallery elements={elements} toggleModal={this.toggleModal} />
-        {loading && (
-          <Dna
-            visible={true}
-            height="80"
-            width="80"
-            ariaLabel="dna-loading"
-            wrapperStyle={{
-              display: 'block',
-              marginRight: 'auto',
-              marginLeft: `auto`,
-            }}
-            wrapperClass="dna-wrapper"
-            marginRight="50%"
-          />
-        )}
-        {loadMore && <LoadBtn onClick={this.onClick} />}
-        {showModal && (
-          <Modal modalImg={selectedImage} onClose={this.toggleModal} />
-        )}
-      </div>
-    );
-  }
+      )}
+      {loadMore && <LoadBtn onClick={onClick} />}
+      {showModal && <Modal modalImg={selectedImage} onClose={toggleModal} />}
+    </div>
+  );
 }

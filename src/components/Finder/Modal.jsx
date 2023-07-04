@@ -1,33 +1,31 @@
-import React, { Component } from 'react';
+import { useEffect } from 'react';
 import PropTypes from 'prop-types';
 import css from './Finder.module.css';
 
-export class Modal extends Component {
-  componentDidMount() {
-    window.addEventListener('keydown', this.handleKeyDown);
-  }
+export const Modal = ({ modalImg, onClose }) => {
+  useEffect(() => {
+    const handleKeyDown = e => {
+      if (e.code === 'Escape') {
+        onClose();
+      }
+    };
 
-  componentWillUnmount() {
-    window.removeEventListener('keydown', this.handleKeyDown);
-  }
+    window.addEventListener('keydown', handleKeyDown);
 
-  handleKeyDown = e => {
-    if (e.code === 'Escape') {
-      this.props.onClose();
-    }
-  };
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
 
-  render() {
-    const { modalImg, onClose } = this.props;
-    return (
-      <div className={css.overlay} onClick={onClose}>
-        <div className={css.modal}>
-          <img src={modalImg} alt="" />
-        </div>
-      </div>
-    );
-  }
-}
+  return (
+    <div className={css.overlay} onClick={onClose}>
+      {' '}
+      <div className={css.modal}>
+        <img src={modalImg} alt="" />{' '}
+      </div>{' '}
+    </div>
+  );
+};
 
 Modal.propTypes = {
   modalImg: PropTypes.string.isRequired,
